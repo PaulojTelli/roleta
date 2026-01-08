@@ -169,6 +169,39 @@ body{
   100%{ transform: scale(1) rotate(0deg); }
 }
 
+/* estado base da imagem */
+.imgBox img{
+  transition: transform 450ms ease, opacity 450ms ease, filter 450ms ease;
+}
+
+/* enquanto embaralha */
+.imgBox.shuffling img{
+  animation: shufflePulse .6s linear infinite;
+  filter: blur(4px) brightness(.8);
+  opacity: .85;
+}
+
+/* efeito cinematográfico ao revelar (fade + zoom) */
+.imgBox.reveal img{
+  opacity: 0;
+  transform: scale(1.12);
+  filter: blur(2px) brightness(.9);
+}
+
+/* quando “entra” de verdade */
+.imgBox.reveal.in img{
+  opacity: 1;
+  transform: scale(1);
+  filter: blur(0) brightness(1);
+}
+
+@keyframes shufflePulse{
+  0%{ transform: scale(1) rotate(0deg); }
+  50%{ transform: scale(1.03) rotate(1deg); }
+  100%{ transform: scale(1) rotate(0deg); }
+}
+
+
 </style>
 </head>
 
@@ -278,6 +311,34 @@ function shuffle(arr){
   return arr;
 }
 
+function vibra(ms=30){
+  if (navigator.vibrate) navigator.vibrate(ms);
+}
+
+function revelarCinematico({src, titulo, descricao}){
+  // prepara “fora de cena”
+  imgBox.classList.add("reveal");
+  imgBox.classList.remove("in");
+
+  // troca conteúdo enquanto está “apagado/zoom”
+  imgEl.src = src;
+  titleEl.textContent = titulo;
+  descEl.textContent = descricao;
+
+  // força o browser a aplicar o estado inicial antes da transição
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      imgBox.classList.add("in"); // faz o fade + zoom voltar ao normal
+    });
+  });
+
+  // limpa classes depois para próximas animações não acumularem
+  setTimeout(()=>{
+    imgBox.classList.remove("reveal");
+    imgBox.classList.remove("in");
+  }, 520);
+}
+
 function sortear(){
   const disponiveis = imagens.filter(i=>i.exibido===0);
   if(!disponiveis.length){
@@ -286,22 +347,47 @@ function sortear(){
     return;
   }
 
-  const escolhido = shuffle([...disponiveis])[0];
-  const idx = imagens.findIndex(x=>x.id===escolhido.id);
-  imagens[idx].exibido=1;
-  imagens[idx].ordem=++ordemAtual;
-
+  btnSpin.disabled = true;
+  imgBox.classList.add("shuffling");
   hero.classList.add("show");
-  statusEl.innerHTML="🔥 Clima definido...";
-  imgEl.src=escolhido.path;
-  titleEl.textContent=escolhido.titulo;
-  descEl.textContent=escolhido.descricao;
+  statusEl.innerHTML="🔄 Embaralhando o clima...";
+  vibra(20);
 
-  progressEl.textContent =
-    `Exploradas: ${ordemAtual} / ${imagens.length}`;
+  // “roleta fake”
+  const shuffleInterval = setInterval(()=>{
+    const fake = imagens[Math.floor(Math.random()*imagens.length)];
+    imgEl.src = fake.path;
+    titleEl.textContent = fake.titulo;
+    descEl.textContent = fake.descricao;
+    vibra(8);
+  }, 120);
 
-  updateHistory();
+  // duração do shuffle
+  setTimeout(()=>{
+    clearInterval(shuffleInterval);
+    imgBox.classList.remove("shuffling");
+
+    // sorteio real
+    const escolhido = shuffle([...disponiveis])[0];
+    const idx = imagens.findIndex(x=>x.id===escolhido.id);
+    imagens[idx].exibido = 1;
+    imagens[idx].ordem = ++ordemAtual;
+
+    // reveal cinematográfico + vibração mais forte
+    statusEl.innerHTML="🔥 Clima definido...";
+    vibra([35, 20, 35]); // padrão “tchan!”
+    revelarCinematico({
+      src: escolhido.path,
+      titulo: escolhido.titulo,
+      descricao: escolhido.descricao
+    });
+
+    progressEl.textContent = `Exploradas: ${ordemAtual} / ${imagens.length}`;
+    updateHistory();
+    btnSpin.disabled = false;
+  }, 1200);
 }
+
 
 function updateHistory(){
   histCount.textContent = imagens.filter(i=>i.exibido).length;
