@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>🔥 Roleta do Desejo</title>
+
+<style>
+:root{
+  color-scheme: dark;
+  --bg: #0f0a0d;
+  --card: #1b1116;
+  --accent: #e11d48;
+  --accent-soft: #fb7185;
+  --text: #fce7f3;
+  --muted: #9d6b7a;
+  --border: #3f1d2b;
+}
+
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  background: radial-gradient(circle at top, #2a0f1d, var(--bg));
+  color: var(--text);
+}
+
+.wrap{ max-width: 980px; margin: 0 auto; padding: 24px; }
+
+.card{
+  background: linear-gradient(180deg, #1f0f18, var(--card));
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 20px 40px rgba(0,0,0,.5);
+}
+
+.topbar{
+  display:flex;
+  gap:12px;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  margin-bottom:16px;
+}
+
+.btn{
+  border:0;
+  border-radius:14px;
+  padding:14px 18px;
+  font-weight:800;
+  cursor:pointer;
+  background: linear-gradient(135deg, var(--accent), #be123c);
+  color:white;
+  letter-spacing:.4px;
+  transition: transform .1s ease, box-shadow .2s ease;
+}
+.btn:active{ transform: scale(.97); }
+
+.btn.secondary{
+  background: transparent;
+  border:1px solid var(--accent-soft);
+  color: var(--accent-soft);
+}
+
+.hint{
+  font-size:14px;
+  color: var(--muted);
+}
+
+.stage{ display:grid; gap:16px; }
+
+.hero{ display:none; gap:18px; }
+.hero.show{ display:grid; grid-template-columns: 360px 1fr; }
+@media (max-width:800px){
+  .hero.show{ grid-template-columns:1fr; }
+}
+
+.imgBox{
+  border-radius:16px;
+  overflow:hidden;
+  border:1px solid var(--border);
+  cursor:pointer;
+}
+.imgBox img{
+  width:100%;
+  aspect-ratio:16/10;
+  object-fit:cover;
+}
+
+.meta h2{
+  margin:0 0 8px;
+  font-size:26px;
+  color:#fecdd3;
+}
+.meta p{
+  margin:0;
+  font-size:16px;
+  line-height:1.6;
+  color:#fbcfe8;
+}
+
+.badge{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  font-size:12px;
+  color: var(--muted);
+  margin-top:12px;
+}
+.dot{
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  background: var(--accent);
+}
+
+.history{
+  margin-top:20px;
+  display:none;
+}
+.history.show{ display:block; }
+
+.history h3{
+  margin-bottom:12px;
+  color:#fecdd3;
+}
+
+.historyList{
+  display:grid;
+  grid-template-columns: repeat(3,1fr);
+  gap:14px;
+}
+@media(max-width:900px){
+  .historyList{ grid-template-columns:repeat(2,1fr); }
+}
+@media(max-width:560px){
+  .historyList{ grid-template-columns:1fr; }
+}
+
+.item{
+  background:#1a0f15;
+  border:1px solid var(--border);
+  border-radius:14px;
+  overflow:hidden;
+}
+.item img{
+  width:100%;
+  aspect-ratio:16/10;
+  object-fit:cover;
+}
+.item .txt{
+  padding:10px 12px;
+}
+.item b{
+  display:block;
+  font-size:14px;
+  color:#fecdd3;
+}
+.item small{
+  color:var(--muted);
+}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+<div class="card">
+
+<div class="topbar">
+  <button id="btnSpin" class="btn">🔥 Girar Roleta</button>
+  <button id="btnHistory" class="btn secondary">
+    Histórico (<span id="histCount">0</span>)
+  </button>
+</div>
+
+<div class="stage">
+<p id="status" class="hint">
+Clique em <b>Girar Roleta</b> e deixe o clima decidir 😉
+</p>
+
+<div id="hero" class="hero">
+  <div class="imgBox" id="imgBox">
+    <img id="img" />
+  </div>
+
+  <div class="meta">
+    <h2 id="title"></h2>
+    <p id="desc"></p>
+    <div class="badge">
+      <span class="dot"></span>
+      <span id="progress"></span>
+    </div>
+    <p class="hint" style="margin-top:14px;">
+      Toque na imagem para mudar o ritmo 🔄
+    </p>
+  </div>
+</div>
+
+<div id="history" class="history">
+  <h3>🔥 Caminho do Desejo</h3>
+  <div id="historyList" class="historyList"></div>
+</div>
+
+</div>
+</div>
+
+<script>
+const imagens = [
+  {
+    id:1,
+    path:"img/1.jpg",
+    titulo:"Conexão Frente a Frente",
+    descricao:"Contato visual, proximidade e ritmo sincronizado.",
+    exibido:0, ordem:null
+  },
+  {
+    id:2,
+    path:"img/2.jpg",
+    titulo:"Abraço Intenso",
+    descricao:"Corpos próximos, sensação de entrega e confiança.",
+    exibido:0, ordem:null
+  },
+  {
+    id:3,
+    path:"img/3.jpg",
+    titulo:"Domínio Suave",
+    descricao:"Controle delicado, clima quente e envolvente.",
+    exibido:0, ordem:null
+  },
+  {
+    id:4,
+    path:"img/4.jpg",
+    titulo:"Exploração Lenta",
+    descricao:"Tempo, toques e expectativa crescendo.",
+    exibido:0, ordem:null
+  },
+  {
+    id:5,
+    path:"img/5.jpg",
+    titulo:"Entrega Total",
+    descricao:"Confiança, intensidade e conexão profunda.",
+    exibido:0, ordem:null
+  },
+];
+
+let ordemAtual = 0;
+
+const btnSpin = document.getElementById("btnSpin");
+const btnHistory = document.getElementById("btnHistory");
+const histCount = document.getElementById("histCount");
+const statusEl = document.getElementById("status");
+const hero = document.getElementById("hero");
+const imgBox = document.getElementById("imgBox");
+const imgEl = document.getElementById("img");
+const titleEl = document.getElementById("title");
+const descEl = document.getElementById("desc");
+const progressEl = document.getElementById("progress");
+const historyWrap = document.getElementById("history");
+const historyList = document.getElementById("historyList");
+
+let historyOpen = false;
+
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function sortear(){
+  const disponiveis = imagens.filter(i=>i.exibido===0);
+  if(!disponiveis.length){
+    statusEl.innerHTML="❤️ Todas as posições já foram exploradas.";
+    btnSpin.disabled=true;
+    return;
+  }
+
+  const escolhido = shuffle([...disponiveis])[0];
+  const idx = imagens.findIndex(x=>x.id===escolhido.id);
+  imagens[idx].exibido=1;
+  imagens[idx].ordem=++ordemAtual;
+
+  hero.classList.add("show");
+  statusEl.innerHTML="🔥 Clima definido...";
+  imgEl.src=escolhido.path;
+  titleEl.textContent=escolhido.titulo;
+  descEl.textContent=escolhido.descricao;
+
+  progressEl.textContent =
+    `Exploradas: ${ordemAtual} / ${imagens.length}`;
+
+  updateHistory();
+}
+
+function updateHistory(){
+  histCount.textContent = imagens.filter(i=>i.exibido).length;
+  if(!historyOpen) return;
+
+  historyList.innerHTML="";
+  imagens.filter(i=>i.exibido)
+    .sort((a,b)=>a.ordem-b.ordem)
+    .forEach(i=>{
+      historyList.innerHTML+=`
+        <div class="item">
+          <img src="${i.path}">
+          <div class="txt">
+            <b>#${i.ordem} — ${i.titulo}</b>
+            <small>${i.descricao}</small>
+          </div>
+        </div>`;
+    });
+}
+
+btnSpin.onclick = sortear;
+imgBox.onclick = sortear;
+btnHistory.onclick = ()=>{
+  historyOpen=!historyOpen;
+  historyWrap.classList.toggle("show",historyOpen);
+  updateHistory();
+};
+</script>
+</body>
+</html>
